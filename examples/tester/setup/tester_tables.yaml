@@ -3,7 +3,7 @@ Description: 'CloudFormation template for Tester tables'
 
 Parameters:
   GTregion1:
-    Description: Enter the region for the second Global Tables regional replica
+    Description: Enter the region for the first Global Tables regional replica
     Type: String
     Default: us-east-1
   GTregion2:
@@ -11,7 +11,7 @@ Parameters:
     Type: String
     Default: us-east-2
   GTregion3:
-    Description: Enter the region for the second Global Tables regional replica
+    Description: Enter the region for the third Global Tables regional replica
     Type: String
     Default: us-west-2
 
@@ -36,6 +36,15 @@ Resources:
           KeyType: HASH
         - AttributeName: SK
           KeyType: RANGE
+      ResourcePolicy:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Principal:
+                AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+              Action: 'dynamodb:*'
+              Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/mytable'
 
   Everysize:
     Type: AWS::DynamoDB::Table
@@ -54,6 +63,15 @@ Resources:
           KeyType: HASH
         - AttributeName: SK
           KeyType: RANGE
+      ResourcePolicy:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Principal:
+                AWS: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+              Action: 'dynamodb:*'
+              Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/everysize'
 
   MREC:
     Type: AWS::DynamoDB::GlobalTable
@@ -100,15 +118,17 @@ Resources:
         - Region: !Ref GTregion2
         - Region: !Ref GTregion3
 
+
   TesterBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Sub "tester-bucket-23429755${AWS::AccountId}134" 
-      PublicAccessBlockConfiguration: # Recommended security best practice
+      PublicAccessBlockConfiguration: 
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
-      Tags:
-        - Key: Project
-          Value: DynamoDB latency tester results
 
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -135,7 +155,5 @@ Resources:
 
 Outputs:
   BucketName:
-    Description: Name of the new Tester S3 Bucket
-    Value: !Ref TesterBucket
-
-#       BucketName: !Sub "tester-bucket-${AWS::AccountId}" 
+    Description: Name of the new Tester S3 Bucket, stored in the .env file for use by jobs
+    Value: !Ref TesterBucket 
